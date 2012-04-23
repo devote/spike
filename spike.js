@@ -11,7 +11,7 @@
  *
  * Update: 23-04-2012
  *
- * element.js DOM Element Model v0.0.1 for Internet Explorer < 8
+ * element.js DOM Element Model v0.0.2 for Internet Explorer < 8
  */
 
 (function( window, undefined ) {
@@ -22,22 +22,40 @@
 
 	if ( !window.Element && document.attachEvent ) {
 
-		window.Element = function(){}
-
 		var ready = false,
 			__getElementById = document.getElementById,
 			__createElement = document.createElement,
-			__createDocumentFragment = document.createDocumentFragment;
+			__createDocumentFragment = document.createDocumentFragment,
+			prototype = {},
+			Element = function(){}
+
+		Element.prototype = document.createComment( "" );
+		Element.prototype.attachEvent( 'onpropertychange', function() {
+
+			var name = window.event.propertyName;
+
+			prototype[ name ] = 1;
+
+			var elems = document.getElementsByTagName( '*' );
+
+			for( var l = elems.length; elem = elems[ --l ]; ) {
+				if ( elem.nodeType === 1 ) {
+					elem[ name ] = Element.prototype[ name ];
+				}
+			}
+		});
+		document.documentElement.firstChild.appendChild( Element.prototype );
+
+		window.Element = Element;
 
 		var copyMethod = function( elem ) {
-			if ( elem && elem.nodeType === 1 && !elem.prototypeAdded ) {
-				for( var key in window.Element.prototype ) {
-					if ( Object.prototype.hasOwnProperty.call( window.Element.prototype, key ) ) {
-						elem[ key ] = window.Element.prototype[ key ];
+			if ( elem && elem.nodeType === 1 ) {
+				for( var key in prototype ) {
+					if ( Object.prototype.hasOwnProperty.call( prototype, key ) ) {
+						elem[ key ] = Element.prototype[ key ];
 					}
 				}
 				elem.attachEvent( "onpropertychange", propChange );
-				elem.prototypeAdded = 1;
 			}
 			return elem;
 		}
