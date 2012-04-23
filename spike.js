@@ -1,5 +1,5 @@
 /*
- * spike for IE JavaScript Library v0.0.1
+ * spike for IE JavaScript Library v0.0.2
  *
  * Copyright 2012, Dmitriy Pakhtinov ( spb.piksel@gmail.com )
  *
@@ -9,7 +9,7 @@
  *   http://www.opensource.org/licenses/mit-license.php
  *   http://www.gnu.org/licenses/gpl.html
  *
- * Update: 22-04-2012
+ * Update: 23-04-2012
  *
  * element.js DOM Element Model v0.0.1 for Internet Explorer < 8
  */
@@ -104,7 +104,7 @@
 })( window );
 
 /*
- * events.js DOM Event Model v0.0.1 for Internet Explorer
+ * events.js DOM Event Model v0.0.2 for Internet Explorer
  */
 (function( window, undefined ) {
 
@@ -256,7 +256,7 @@
 				e.preventDefault();
 			}
 
-			if ( e.isPropagationStopped === true && !e._propagationPhase ) {
+			if ( e.isPropagationStopped === true && !e._propagationStoppedPhase ) {
 				e._propagationStoppedPhase = e.eventPhase;
 				e._propagationStoppedElem = listener.elem;
 			}
