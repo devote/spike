@@ -26,6 +26,7 @@
 			__getElementById = document.getElementById,
 			__createElement = document.createElement,
 			__createDocumentFragment = document.createDocumentFragment,
+			fragment = __createDocumentFragment(),
 			prototype = {},
 			Element = function(){}
 
@@ -38,6 +39,13 @@
 
 			var elems = document.getElementsByTagName( '*' );
 
+			for( var l = elems.length; elem = elems[ --l ]; ) {
+				if ( elem.nodeType === 1 ) {
+					elem[ name ] = Element.prototype[ name ];
+				}
+			}
+
+			elems = fragment.getElementsByTagName( '*' );
 			for( var l = elems.length; elem = elems[ --l ]; ) {
 				if ( elem.nodeType === 1 ) {
 					elem[ name ] = Element.prototype[ name ];
@@ -60,10 +68,9 @@
 			return elem;
 		}
 
-		var propChange = function( e ) {
-			e = e || window.event;
-			if ( e.propertyName === "innerHTML" ) {
-				var elems = copyMethod( e.target || e.srcElement ).getElementsByTagName( '*' );
+		var propChange = function() {
+			if ( window.event.propertyName === "innerHTML" ) {
+				var elems = copyMethod( window.event.srcElement ).getElementsByTagName( '*' );
 				for( var l = elems.length; copyMethod( elems[ --l ] ); ) {}
 			}
 		}
@@ -82,7 +89,7 @@
 		}
 
 		document.createElement = function( tagName ) {
-			return copyMethod( __createElement( tagName ) );
+			return fragment.appendChild( copyMethod( __createElement( tagName ) ) );
 		}
 
 		document.createDocumentFragment = function() {
