@@ -458,28 +458,22 @@
 		pSplice = Array.prototype.splice,
 		pPush = Array.prototype.push,
 		spike = window.spike || {},
-
-	hasQSA = (function(){
-		var div = document.createElement('div');
-		div.innerHTML = "<p class='TEST'></p>";
-		if ( !div.querySelectorAll || div.querySelectorAll(".TEST").length === 0 ) {
-			div = null;
-			return false;
-		}
-		div = null;
-		return [Element.prototype.querySelectorAll, document.querySelectorAll];
-	})();
+		hasQSA = document.querySelectorAll ? [Element.prototype.querySelectorAll, document.querySelectorAll] : 0;
 
 	var moveElems = (function() {
-		var hasSlice = true, div = document.createElement("div");
+
+		var i, hasSlice = true,
+			div = document.createElement("div");
+
 		div.appendChild( document.createComment("") );
+		i = div.getElementsByTagName("*").length;
+		div.parentNode && div.parentNode.removeChild( div );
 
 		try {
 			pSlice.call( documentElement.childNodes, 0 );
 		} catch ( _ ) { hasSlice = false }
 
-		if ( div.getElementsByTagName("*").length > 0 || !hasSlice ) {
-			div = null;
+		if ( i > 0 || !hasSlice ) {
 			return function( elems, ret, rmComment, isArray ) {
 				if ( !rmComment && hasSlice ) {
 					pPush.apply( ret, pSlice.call( elems, 0 ) );
@@ -497,7 +491,6 @@
 				return ret;
 			}
 		} else {
-			div = null;
 			return function( elems, ret ) {
 				pPush.apply( ret, pSlice.call( elems, 0 ) );
 				return ret;
