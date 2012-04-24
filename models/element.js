@@ -9,7 +9,7 @@
  *   http://www.opensource.org/licenses/mit-license.php
  *   http://www.gnu.org/licenses/gpl.html
  *
- * Update: 23-04-2012
+ * Update: 24-04-2012
  */
 
 (function( window, undefined ) {
@@ -36,7 +36,6 @@
 			prototype[ name ] = 1;
 
 			var elems = document.getElementsByTagName( '*' );
-
 			for( var l = elems.length; elem = elems[ --l ]; ) {
 				if ( elem.nodeType === 1 ) {
 					elem[ name ] = Element.prototype[ name ];
@@ -58,10 +57,15 @@
 			if ( elem && elem.nodeType === 1 ) {
 				for( var key in prototype ) {
 					if ( Object.prototype.hasOwnProperty.call( prototype, key ) ) {
-						elem[ key ] = Element.prototype[ key ];
+						if ( elem[ key ] !== Element.prototype[ key ] ) {
+							elem[ key ] = Element.prototype[ key ];
+						}
 					}
 				}
-				elem.attachEvent( "onpropertychange", propChange );
+				if ( !elem.__propChangeAttached ) {
+					elem.__propChangeAttached = 1;
+					elem.attachEvent( "onpropertychange", propChange );
+				}
 			}
 			return elem;
 		}
