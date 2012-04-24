@@ -91,7 +91,11 @@
 		}
 
 		document.createElement = function( tagName ) {
-			return fragment.appendChild( copyMethod( __createElement( tagName ) ) );
+			var elem = copyMethod( __createElement( tagName ) );
+			if ( elem.nodeName !== "INPUT" ) {
+				fragment.appendChild( elem );
+			}
+			return elem;
 		}
 
 		document.createDocumentFragment = function() {
