@@ -1,5 +1,5 @@
 /*
- * spike for IE JavaScript Library v0.0.3
+ * spike for IE JavaScript Library v0.0.4
  *
  * Copyright 2012, Dmitriy Pakhtinov ( spb.piksel@gmail.com )
  *
@@ -9,9 +9,9 @@
  *   http://www.opensource.org/licenses/mit-license.php
  *   http://www.gnu.org/licenses/gpl.html
  *
- * Update: 08-05-2012
+ * Update: 09-05-2012
  *
- * element.js DOM Element Model v0.1.0 for Internet Explorer < 8
+ * element.js DOM Element Model v0.1.1 for Internet Explorer < 8
  */
 
 (function( window, undefined ) {
@@ -26,6 +26,7 @@
 		var ready = false,
 			// save originals methods
 			__getElementById = document.getElementById,
+			__getElementsByTagName = document.getElementsByTagName,
 			__createElement = document.createElement,
 			__createDocumentFragment = document.createDocumentFragment,
 			__attachEvent = document.attachEvent,
@@ -53,7 +54,7 @@
 				l, idx, name, elem;
 
 			if ( elems && elems.nodeType || !elems ) {
-				elems = ( elems || document ).getElementsByTagName( '*' );
+				elems = elems && elems.getElementsByTagName( '*' ) || __getElementsByTagName( '*' );
 			}
 
 			for( l = elems.length; elem = elems[ --l ]; ) {
@@ -114,6 +115,8 @@
 			return addMethods( [  __createDocumentFragment() ] );
 		}
 
+		window.Element = Element;
+
 		if ( document.readyState === "complete" ) {
 
 			addMethods();
@@ -123,7 +126,9 @@
 				if ( !ready && document.readyState === "complete" ) {
 					ready = true;
 					document.detachEvent( "onreadystatechange", DOMContentLoaded );
+					// restore the original methods after document status complete
 					document.attachEvent = __attachEvent;
+					document.getElementsByTagName = __getElementsByTagName;
 					addMethods();
 				}
 			}
@@ -131,6 +136,8 @@
 			__attachEvent( "onreadystatechange", DOMContentLoaded );
 			window.attachEvent( "onload", DOMContentLoaded );
 
+			// temporarily replace the original methods,
+			// while the status of the document is not completed
 			document.attachEvent = function( event, listener ) {
 				if ( "onreadystatechange" === event ) {
 					document.detachEvent( event, DOMContentLoaded );
@@ -140,9 +147,13 @@
 				}
 				return __attachEvent( event, listener );
 			}
-		}
 
-		window.Element = Element;
+			// temporarily replace the original methods
+			document.getElementsByTagName = function( tagName ) {
+				addMethods();
+				return __getElementsByTagName( tagName );
+			}
+		}
 	}
 
 })( window );
