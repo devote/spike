@@ -1,5 +1,5 @@
 /*
- * element.js DOM Element Model v0.1.1 for Internet Explorer < 8
+ * element.js DOM Element Model v0.1.2 for Internet Explorer < 8
  *
  * Copyright 2012, Dmitriy Pakhtinov ( spb.piksel@gmail.com )
  *
@@ -28,8 +28,8 @@
 			__createElement = document.createElement,
 			__createDocumentFragment = document.createDocumentFragment,
 			__attachEvent = document.attachEvent,
-			// create dynamic fragment for intercept elements
-			fragment = __createDocumentFragment(),
+			// cache for new elements, it no parent
+			newElements = [],
 			// for store the method names
 			prototypeNames = [],
 			// for store index on method names
@@ -56,7 +56,23 @@
 			}
 
 			for( l = elems.length; elem = elems[ --l ]; ) {
+
 				if ( elem.nodeType === 1 ) {
+
+					// if element is attached in DOM object, remove him from cache
+					if ( elem.$_idx && elem.parentNode &&
+						elem.document && elem.document.nodeType !== 11 ) {
+
+						// remove attached element from cache
+						newElements.splice( --elem.$_idx, 1 );
+						// shifting indices elements in cache
+						for( ; idx = newElements[ elem.$_idx++ ]; ) {
+							idx.$_idx = elem.$_idx;
+						}
+						// remove index
+						elem.$_idx = undefined;
+					}
+
 					if ( methodName ) {
 						if ( elem[ methodName ] !== proto[ methodName ] ) {
 							elem[ methodName ] = proto[ methodName ];
@@ -89,7 +105,7 @@
 			}
 
 			addMethods( document, name );
-			addMethods( fragment, name );
+			addMethods( newElements, name );
 
 		});
 
@@ -100,12 +116,11 @@
 		}
 
 		document.createElement = function( tagName ) {
-			var elem = addMethods( [ __createElement( tagName ) ] );
-			// if element "INPUT" attach on the fragment or DOM object,
-			// Internet Explorer generate error if try change attribute "type".
-			if ( elem.nodeName !== "INPUT" ) {
-				fragment.appendChild( elem );
-			}
+			var elem = __createElement( tagName );
+			// add new element to cache
+			elem.$_idx = newElements.push( elem );
+
+			addMethods( newElements );
 			return elem;
 		}
 
