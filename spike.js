@@ -1,5 +1,5 @@
 /*
- * spike for IE JavaScript Library v0.0.5
+ * spike for IE JavaScript Library v0.0.6
  *
  * Copyright 2012, Dmitriy Pakhtinov ( spb.piksel@gmail.com )
  *
@@ -11,7 +11,7 @@
  *
  * Update: 09-05-2012
  *
- * element.js DOM Element Model v0.1.2 for Internet Explorer < 8
+ * element.js DOM Element Model v0.1.3 for Internet Explorer < 8
  */
 
 (function( window, undefined ) {
@@ -20,38 +20,30 @@
 
 	var document = window.document;
 
-	// if not exists Element interface
 	if ( !window.Element && document.attachEvent ) {
 
 		var ready = false,
-			// save originals methods
-			__getElementById = document.getElementById,
-			__getElementsByTagName = document.getElementsByTagName,
-			__createElement = document.createElement,
-			__createDocumentFragment = document.createDocumentFragment,
-			__attachEvent = document.attachEvent,
-			// cache for new elements, it no parent
-			newElements = [],
-			// for store the method names
-			prototypeNames = [],
-			// for store index on method names
-			prototypeIndexes = {},
-			// interface Element
-			Element = function(){},
-			proto,
+		    __getElementById = document.getElementById,
+		    __getElementsByTagName = document.getElementsByTagName,
+		    __createElement = document.createElement,
+		    __createDocumentFragment = document.createDocumentFragment,
+		    __attachEvent = document.attachEvent,
+		    newElements = [],
+		    prototypeNames = [],
+		    prototypeIndexes = {},
+		    Element = function(){},
+		    proto,
 
-		// intercept change element content
 		propChange = function() {
 			if ( window.event.propertyName === "innerHTML" ) {
 				addMethods( window.event.srcElement );
 			}
 		},
 
-		// set methods from prototype Element to new/all element
-		addMethods = function( elems, methodName ) {
+		addMethods = function( elems, methodName, only ) {
 
 			var i = prototypeNames.length,
-				l, idx, name, elem;
+			    l, idx, name, elem;
 
 			if ( elems && elems.nodeType || !elems ) {
 				elems = elems && elems.getElementsByTagName( '*' ) || __getElementsByTagName( '*' );
@@ -61,33 +53,32 @@
 
 				if ( elem.nodeType === 1 ) {
 
-					// if element is attached in DOM object, remove him from cache
-					if ( elem.$_idx && elem.parentNode &&
+					if ( elem.$_sIdx && elem.parentNode &&
 						elem.document && elem.document.nodeType !== 11 ) {
 
-						// remove attached element from cache
-						newElements.splice( --elem.$_idx, 1 );
-						// shifting indices elements in cache
-						for( ; idx = newElements[ elem.$_idx++ ]; ) {
-							idx.$_idx = elem.$_idx;
+						newElements.splice( --elem.$_sIdx, 1 );
+						for( ; idx = newElements[ elem.$_sIdx++ ]; ) {
+							idx.$_sIdx = elem.$_sIdx;
 						}
-						// remove index
-						elem.$_idx = undefined;
+						elem.$_sIdx = undefined;
 					}
 
-					if ( methodName ) {
-						if ( elem[ methodName ] !== proto[ methodName ] ) {
-							elem[ methodName ] = proto[ methodName ];
-						}
-					} else {
-						for( idx = i; name = prototypeNames[ --idx ]; ) {
-							if ( elem[ name ] !== proto[ name ] ) {
-								elem[ name ] = proto[ name ];
+					if ( !only || only === elem ) {
+
+						if ( methodName ) {
+							if ( elem[ methodName ] !== proto[ methodName ] ) {
+								elem[ methodName ] = proto[ methodName ];
 							}
-						}
-						if ( !elem.__propChangeAttached ) {
-							elem.__propChangeAttached = 1;
-							elem.attachEvent( "onpropertychange", propChange );
+						} else {
+							for( idx = i; name = prototypeNames[ --idx ]; ) {
+								if ( elem[ name ] !== proto[ name ] ) {
+									elem[ name ] = proto[ name ];
+								}
+							}
+							if ( !elem.$_sOPC ) {
+								elem.$_sOPC = 1;
+								elem.attachEvent( "onpropertychange", propChange );
+							}
 						}
 					}
 				}
@@ -118,15 +109,17 @@
 		}
 
 		document.createElement = function( tagName ) {
-			var elem = __createElement( tagName );
-			// add new element to cache
-			elem.$_idx = newElements.push( elem );
 
-			addMethods( newElements );
+			var elem = __createElement( tagName );
+			elem.$_sIdx = newElements.push( elem );
+
+			addMethods( newElements, null, elem );
+
 			return elem;
 		}
 
 		document.createDocumentFragment = function() {
+
 			return addMethods( [  __createDocumentFragment() ] );
 		}
 
@@ -141,7 +134,6 @@
 				if ( !ready && document.readyState === "complete" ) {
 					ready = true;
 					document.detachEvent( "onreadystatechange", DOMContentLoaded );
-					// restore the original methods after document status complete
 					document.attachEvent = __attachEvent;
 					document.getElementsByTagName = __getElementsByTagName;
 					addMethods();
@@ -151,8 +143,6 @@
 			__attachEvent( "onreadystatechange", DOMContentLoaded );
 			window.attachEvent( "onload", DOMContentLoaded );
 
-			// temporarily replace the original methods,
-			// while the status of the document is not completed
 			document.attachEvent = function( event, listener ) {
 				if ( "onreadystatechange" === event ) {
 					document.detachEvent( event, DOMContentLoaded );
@@ -163,7 +153,6 @@
 				return __attachEvent( event, listener );
 			}
 
-			// temporarily replace the original methods
 			document.getElementsByTagName = function( tagName ) {
 				addMethods();
 				return __getElementsByTagName( tagName );
