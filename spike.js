@@ -809,8 +809,8 @@
 	}
 
 	try {
-		// test of CSS3 pseudo selector
-		document.querySelector( "p:last-child" );
+		// test of IE CSS3 pseudo selector
+		document.attachEvent && document.querySelector( "p:last-child" );
 
 	} catch( _e_ ) {
 
