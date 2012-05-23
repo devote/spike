@@ -1,7 +1,7 @@
 /*
- * selectors.js CSS3 Selectors Model v1.2.2
+ * CSS3 Selectors API for Internet Explorer v1.0
  *
- * Copyright 2011, Dmitriy Pakhtinov ( spb.piksel@gmail.com )
+ * Copyright 2012, Dmitriy Pakhtinov ( spb.piksel@gmail.com )
  *
  * http://spb-piksel.ru/
  *
@@ -9,140 +9,26 @@
  *   http://www.opensource.org/licenses/mit-license.php
  *   http://www.gnu.org/licenses/gpl.html
  *
- * Update: 23-04-2012
+ * Update: 23-05-2012
  */
 
 (function( window, undefined ) {
 
-	"use strict";
-
-	var _,
-
-		mqsa = /\s*(?:(\*|(?:(?:\*|[\w\-]+)\|)?(?:[\w\-]+|\*)))?(?:\[\s*(?:((?:[\w\-]+\|)?[\w\-]+)\s*((?:~|\^|\$|\*|\||!)?=)\s*)?((?:".*?(?:(?:[\\]{2}(?="))|[^\\])"|'.*?(?:(?:[\\]{2}(?='))|[^\\])'|[^\]].*?)?)\s*\])?(?:(\.|#)([\w\-]+))?(?:(:(?::)?)([\w\-]+)(?:\(\s*([^)]+)\s*\))?)?(?:(?:\s*(?=\s))?(?:(?:\s(?=,|>|\+|~))?([\s,>+~](?!$)))?)?/g,
-
-		baseHasDuplicate = true,
-		hasDuplicate = false,
-
-		Element = window.Element,
+	var
 		document = window.document,
-		documentElement = document.documentElement,
+		Element = window["Element"],
+		ElementProto = Element && Element.prototype,
+		mqsa = /\s*(?:(\*|(?:(?:\*|[\w\-]+)\|)?(?:[\w\-]+|\*)))?(?:\[\s*(?:((?:[\w\-]+\|)?[\w\-]+)\s*((?:~|\^|\$|\*|\||!)?=)\s*)?((?:".*?(?:(?:[\\]{2}(?="))|[^\\])"|'.*?(?:(?:[\\]{2}(?='))|[^\\])'|[^\s\]]*)?)\s*(?:(i)\s*)?\])?(?:(\.|#)([\w\-]+))?(?:(:(?::)?)([\w\-]+)(?:\(\s*([^)]+)\s*\))?)?(?:(?:\s*(?=\s))?(?:(?:\s(?=,|>|\+|~))?([\s,>+~](?!$))|(\s*$))?)?/g,
+		nativeQsa = document.querySelectorAll ? [ ElementProto.querySelectorAll, document.querySelectorAll ] : 0,
 
-		byClass = Element && Element.prototype.getElementsByClassName,
-		pSlice = Array.prototype.slice,
-		pSplice = Array.prototype.splice,
-		pPush = Array.prototype.push,
-		spike = window.spike || {},
-		hasQSA = document.querySelectorAll ? [Element.prototype.querySelectorAll, document.querySelectorAll] : 0;
-
-	var moveElems = (function() {
-
-		var i, hasSlice = true,
-			div = document.createElement("div");
-
-		div.appendChild( document.createComment("") );
-		i = div.getElementsByTagName("*").length;
-		div.parentNode && div.parentNode.removeChild( div );
-
-		try {
-			pSlice.call( documentElement.childNodes, 0 );
-		} catch ( _ ) { hasSlice = false }
-
-		if ( i > 0 || !hasSlice ) {
-			return function( elems, ret, rmComment, isArray ) {
-				if ( !rmComment && hasSlice ) {
-					pPush.apply( ret, pSlice.call( elems, 0 ) );
-				} else if ( !rmComment && isArray ) {
-					pPush.apply( ret, elems );
-				} else {
-					var i = 0, l = ret.length;
-					for( ; elems[ i ]; i++ ) {
-						if ( elems[ i ].nodeType === 1 ) {
-							ret[ l++ ] = elems[ i ];
-						}
-					}
-					l === ret.length || ( ret.length = l );
-				}
-				return ret;
-			}
-		} else {
-			return function( elems, ret ) {
-				pPush.apply( ret, pSlice.call( elems, 0 ) );
-				return ret;
-			}
-		}
-	})();
-
-	var sortElems = (function() {
-		[0, 0].sort(function() {
-			baseHasDuplicate = false;
-			return 0;
-		});
-
-		if ( documentElement.compareDocumentPosition ) {
-			return function( a, b ) {
-				if ( a == b ) {
-					hasDuplicate = true;
-					return 0;
-				}
-				if ( documentElement.compareDocumentPosition ) {
-					if ( !a.compareDocumentPosition || !b.compareDocumentPosition ) {
-						return a.compareDocumentPosition ? -1 : 1;
-					}
-					return a.compareDocumentPosition( b ) & 4 ? -1 : a === b ? 0 : 1;
-				}
-			}
-		} else if ( "sourceIndex" in documentElement ) {
-			return function( a, b ) {
-				if ( a == b ) {
-					hasDuplicate = true;
-					return 0;
-				}
-				if ( !a.sourceIndex || !b.sourceIndex ) {
-					return a.sourceIndex ? -1 : 1;
-				}
-				return a.sourceIndex - b.sourceIndex;
-			}
-		} else if ( document.createRange ) {
-			return function( a, b ) {
-				if ( a == b ) {
-					hasDuplicate = true;
-					return 0;
-				}
-				if ( !a.ownerDocument || !b.ownerDocument ) {
-					return a.ownerDocument ? -1 : 1;
-				}
-
-				var aRange = a.ownerDocument.createRange(),
-					bRange = b.ownerDocument.createRange();
-				aRange.setStart( a, 0 );
-				aRange.setEnd( a, 0 );
-				bRange.setStart( b, 0 );
-				bRange.setEnd( b, 0 );
-				return aRange.compareBoundaryPoints( Range.START_TO_END, bRange );
-			}
-		} else {
-			return function( a, b ) {
-				if ( a == b ) {
-					hasDuplicate = true;
-				}
-				return 0;
-			}
-		}
-	})();
-
-	var attrMap = {
-		"class": "className",
-		"for": "htmlFor"
-	}
-
-	var attrHandle = {
-		href: function( elem ) {
+	attrHandle = {
+		"href": function( elem ) {
 			return elem.getAttribute( "href", 2 );
 		},
-		type: function( elem ) {
+		"type": function( elem ) {
 			return elem.getAttribute( "type" );
 		},
-		style: function( elem ) {
+		"style": function( elem ) {
 			var style = elem.getAttribute( "style" );
 			if ( typeof style === "object" ) {
 				return elem.style.cssText || "";
@@ -150,40 +36,11 @@
 				return style;
 			}
 		}
-	}
+	},
 
-	var checkAttr = function( chunks, elem, attr ) {
-
-		var attr = attrHandle[ attr ] ? attrHandle[ attr ]( elem ) :
-			elem[ attr ] != null ? elem[ attr ] : elem.getAttribute( attr ),
-			type = chunks[ 3 ],
-			check = chunks[ 4 ],
-			value = attr + "";
-
-		return attr == null ?
-			type === "!=" :
-			type === "=" ?
-			value === check :
-			type === "*=" ?
-			value.indexOf( check ) >= 0 :
-			type === "~=" ?
-			(" " + value + " ").indexOf( " " + check + " " ) >= 0 :
-			!check ?
-			value && attr !== false :
-			type === "!=" ?
-			value !== check :
-			type === "^=" ?
-			value.indexOf( check ) === 0 :
-			type === "$=" ?
-			value.substr( value.length - check.length ) === check :
-			type === "|=" ?
-			value === check || value.substr( 0, check.length + 1 ) === check + "-" :
-			false;
-	}
-
-
-	spike.filters = (function(){
-
+	// pseudo filters
+	filters = (function(){
+		// calculate for :nth pseudo-class
 		function calc( elem, rule, i ) {
 			var diff = i - rule[ 1 ];
 
@@ -194,50 +51,63 @@
 		}
 
 		var filters = {
-
+			// filters for pseudo-classes
 			":": {
+				// pseudo-class nth at start
 				"nth-child": function( elem, rule ) {
 					return calc( elem, rule, elem.nodeIndex || 1 );
 				},
+				// pseudo-class nth at end
 				"nth-last-child": function( elem, rule ) {
 					var p = elem.parentNode,
 						i = p && ( ( p._qsaCE || p.children.length || 0 ) + 1 ) || 2;
 					return calc( elem, rule, i - ( elem.nodeIndex || 1 ) );
 				},
+				// first on parent
 				"first-child": function( elem ) {
 					elem = elem.previousSibling;
 					return !( elem && ( elem.nodeType === 3 ? elem.previousSibling : 1 ) );
 				},
+				// last on parent
 				"last-child": function( elem ) {
 					elem = elem.nextSibling;
 					return !( elem && ( elem.nodeType === 3 ? elem.nextSibling : 1 ) );
 				},
-				empty: function( elem ) {
+				// if element is empty
+				"empty": function( elem ) {
 					return !elem.firstChild;
 				},
-				enabled: function( elem ) {
+				// if element enabled
+				"enabled": function( elem ) {
 					return elem.disabled === false && elem.type !== "hidden";
 				},
-				disabled: function( elem ) {
+				// if element not enabled
+				"disabled": function( elem ) {
 					return elem.disabled === true;
 				},
-				checked: function( elem ) {
+				// if element is checked
+				"checked": function( elem ) {
 					return elem.checked === true;
 				},
-				not: function( elem, content, _, chunks ) {
-					if ( ( !chunks[ 1 ] || chunks[ 1 ] && elem.nodeName === chunks[ 1 ] ) &&
-						checkRule( chunks, [ elem ], [] ).length > 0 ) {
+				//
+				"not": function( elem, selector ) {
+					if ( qSelector( selector, 0, 0, elem ).length > 0 ) {
 						return false;
 					}
 					return true;
 				},
-				contains: function( elem, content ) {
+				// contains
+				"contains": function( elem, content ) {
 					return ( elem.textContent || elem.innerText || elem.nodeValue || elem.value || "" ).indexOf( content ) >= 0;
 				}
 			},
-			"::": {}
+			// filters pseudo-elements
+			"::": {
+				
+			}
 		}
 
+		// if element only child
 		filters[":"]["only-child"] = function( elem ) {
 			return filters[":"]["first-child"]( elem ) && filters[":"]["last-child"]( elem );
 		}
@@ -245,523 +115,352 @@
 		return filters;
 	})();
 
-	spike.preFilters = (function(){
-		var pre = {
-			"nth-child": function( chunks ) {
-				var rule = chunks[ 9 ].replace( /^\+|\s*/g, '' ),
-					test = /(-?)(\d*)(?:n([+\-]?\d*))?/.exec( rule === "even" && "2n" || rule === "odd" && "2n+1" || !/\D/.test( rule ) && "0n+" + rule || rule );
+	function checkRule( elem, $1, $2, $3, $5, $6, $7, $9, pseudo, preparePseudo ) {
 
-				chunks[ 9 ] = [ ( test[ 1 ] + ( test[ 2 ] || 1 ) ) - 0, test[ 3 ] - 0 ];
-				return !( chunks[ 9 ][ 0 ] === 1 && chunks[ 9 ][ 1 ] === 0 );
+		var value, attr, parent, node;
+
+		if ( $1 ) {
+
+			value = (
+				attr = attrHandle[ $1 ] ?
+					attrHandle[ $1 ]( elem ) :
+					elem[ $1 ] != null ?
+					elem[ $1 ] :
+					elem.getAttribute( $1 )
+			) + "";
+
+			if ( !( attr == null ?
+				$2 === "!=" :
+				$2 === "=" ?
+				value === $3 :
+				$2 === "*=" ?
+				value.indexOf( $3 ) >= 0 :
+				$2 === "~=" ?
+				(" " + value + " ").indexOf( " " + $3 + " " ) >= 0 :
+				!$3 || !$2 ?
+				value && attr !== false :
+				$2 === "!=" ?
+				value !== $3 :
+				$2 === "^=" ?
+				value.indexOf( $3 ) === 0 :
+				$2 === "$=" ?
+				value.substr( value.length - $3.length ) === $3 :
+				$2 === "|=" ?
+				value === $3 || value.substr( 0, $3.length + 1 ) === $3 + "-" :
+				false )
+			) {
+				return 0;
 			}
 		}
-		pre["nth-last-child"] = pre["nth-child"];
-		return pre;
-	})();
 
-	var checkRule = function( chunks, elems, extra, tag ) {
-
-		var i, l, elem, j = elems.length,
-			attr, value, pre = false, type, pseudo, m,
-			index = 0, parent, node;
-
-		if ( !chunks[ 2 ] && chunks[ 4 ] ) {
-			chunks[ 2 ] = chunks[ 4 ];
-			chunks[ 4 ] = undefined;
-		} else if ( chunks[ 4 ] ) {
-			chunks[ 4 ] = chunks[ 4 ].replace( /^(?:"(.*)"|'(.*)')$/, '$1$2' ).replace( /\\/g, "" );
+		if ( $5 === "." ) {
+			if ( (" " + elem.className + " ").indexOf( $6 ) === -1 ) {
+				return 0;
+			}
+		} else if ( $5 === "#" && elem.id !== $6 ) {
+			return 0;
 		}
 
-		attr = attrMap[ chunks[ 2 ] ] || chunks[ 2 ];
+		if ( $7 && pseudo ) {
 
-		type = chunks[ 5 ] === "." ? 1 : chunks[ 5 ] === "#" ? 2 : false;
-		value = chunks[ 6 ];
-		pseudo = spike.filters[ chunks[ 7 ] ] && spike.filters[ chunks[ 7 ] ][ chunks[ 8 ] ] || chunks[ 8 ] && spike.error( chunks[ 8 ] ) || false;
-
-		if ( !attr && !type && !pseudo && j ) {
-			moveElems( elems, extra, !tag, elems instanceof Array );
-
-		} else {
-
-			if ( pseudo && chunks[ 9 ] ) {
-				mqsa.lastIndex = 0;
-				m = mqsa.exec( chunks[ 9 ] );
-				m[ 1 ] = ( m[ 1 ] && m[ 1 ] !== "*" ) ? m[ 1 ].replace( "|", ':' ).toUpperCase() : undefined;
-				spike.preFilters[ chunks[ 8 ] ] && ( pre = spike.preFilters[ chunks[ 8 ] ]( chunks ) );
-			}
-
-			l = extra.length;
-
-			for( i = 0; i < j; i++ ) {
-
-				elem = elems[ i ];
-
-				if ( elem.nodeType === 1 ) {
-					if ( attr && !checkAttr( chunks, elem, attr ) ) {
-						elem = null;
+			// prepare elements for nth
+			// if success pre-filter, and not indexes, or change DOM, to index all again
+			if ( preparePseudo && ( parent = elem.parentNode ) && ( !elem.nodeIndex || parent._qsaCL !== parent.children.length ) ) {
+				value = 0;
+				// index all childs
+				for ( node = parent.firstChild; node; node = node.nextSibling ) {
+					if ( node.nodeType === 1 ) {
+						node.nodeIndex = ++value;
 					}
-
-					if ( elem && type ) {
-
-						if ( type === 1 ) {
-							if ( !elem.className || !( (" " + elem.className + " ").indexOf( " " + value + " " ) >= 0 ) ) {
-								elem = null;
-							}
-						} else if ( type === 2 ) {
-							if ( elem.id !== value ) {
-								elem = null;
-							}
-						}
-					}
-
-					if ( elem && pseudo ) {
-
-						if ( pre && ( parent = elem.parentNode ) && ( !elem.nodeIndex || parent._qsaCL !== parent.children.length ) ) {
-							index = 0;
-							for ( node = parent.firstChild; node; node = node.nextSibling ) {
-								if ( node.nodeType === 1 ) {
-									node.nodeIndex = ++index;
-								}
-							}
-							parent._qsaCE = index;
-							parent._qsaCL = parent.children.length;
-						}
-
-						if ( !pseudo( elem, chunks[ 9 ], chunks, m ) ) {
-							elem = null;
-						}
-					}
-
-					elem && ( extra[ l++ ] = elem );
 				}
+				// store child nums
+				parent._qsaCE = value;
+				// store count num elems on parent
+				parent._qsaCL = parent.children.length;
 			}
 
-			l === extra.length || ( extra.length = l );
+			if ( !pseudo( elem, $9 ) ) {
+				return 0;
+			}
 		}
 
-		return extra;
+		return 1;
 	}
 
-	var parser = function( selector, context, extra, sub ) {
+	function prepareChunks( $0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $A, $B ) {
 
-		var m, i, j, k, l, n, o, len = selector.length, elems,
-			elem, child, prevRule = true, nextRule, cache = [],
-			parts = [], part, tagOnly, from, out = extra[ 0 ],
-			lastIndex = mqsa.lastIndex, tag, uTag, index;
+		var pseudo, preparePseudo = 0;
 
-		for( i = 0, j = context.length; i < j; i++ ) {
+		// normalize namespace
+		$0 = $0 && ( $0 === "*" ? "" : $0.replace( "|", ':' ).toUpperCase() );
 
-			from = context[ i ];
+		// remove quotes and slashes
+		$3 = $3 && $3.replace( /^(?:"(.*)"|'(.*)')$/, '$1$2' ).replace( /\\/g, "" );
 
-			index = lastIndex;
+		// attribute name
+		$1 = !$1 && $3 || $1;
 
-			do {
-				mqsa.lastIndex = index;
-				m = mqsa.exec( selector );
+		// mapping attribute
+		$1 = $1 && $1 === "class" ? "className" : $1 === "for" ? "htmlFor" : $1;
 
-				if ( ( tagOnly = !m[ 4 ] && !m[ 5 ] && !m[ 7 ] ) && !m[ 1 ] ) spike.error( selector.substring( index ) );
+		$6 = $5 === "." && " " + $6 + " " || $6;
 
-				index = mqsa.lastIndex;
+		$A = $A || $B !== undefined && ",";
 
-				tag = ( m[ 1 ] && m[ 1 ] !== "*" ) ? m[ 1 ].replace( "|", ':' ) : undefined;
+		if ( !( pseudo = filters[ $7 ] && filters[ $7 ][ $8 ] ) && $8 ) {
+			throw new Error( "Unknown pseudo selector: " + $8 );
+		}
 
-				nextRule = m[ 10 ];
+		if ( pseudo && $9 ) {
 
-				if ( tagOnly && prevRule === true && ( nextRule === "~" || nextRule === ">" ) ) {
+			switch( $8 ) {
+				case "nth-child":
+				case "nth-last-child":
+					var rule = $9.replace( /^\+|\s*/g, '' ),
+						test = /(-?)(\d*)(?:n([+\-]?\d*))?/.exec( rule === "even" && "2n" || rule === "odd" && "2n+1" || !/\D/.test( rule ) && "0n+" + rule || rule );
+					$9 = [ ( test[ 1 ] + ( test[ 2 ] || 1 ) ) - 0, test[ 3 ] - 0 ];
+					preparePseudo = !( $9[ 0 ] === 1 && $9[ 1 ] === 0 );
+					break;
+				default:
+					// restore stuff in parentheses
+					$9 = $9.indexOf( '\x01' ) > 0 ? $9.replace( /\x01/g, "(" ).replace( /\x02/g, ")" ) : $9;
+			}
+		}
 
-					parts.push({ tag: tag ? tag.toUpperCase() : tag, rule: nextRule });
-					nextRule = true;
+		return [ $0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $A, $B, pseudo, preparePseudo ];
+	}
+
+	function prepareParentheses( selector, next ) {
+		// preparing special pseudo-selectors with exist in parentheses the sub-selectors
+		return selector.indexOf( '(' ) === -1 ? selector : next || selector.indexOf( ":not" ) !== -1 ?
+			selector.replace( /([\s\S]*\([^\(]*)\(([^\(\)]*)\)([^\)]*\)[\s\S]*)/g, function( _, a, b, c ) {
+				return prepareParentheses( a + "\x01" + b + "\x02" + c, 1 );
+		}) : selector;
+	}
+
+	function qSelector( selector, context, seed, candidates, combinator ) {
+
+		var i, length, elem, result = [];
+
+		context = context && ( context.nodeType ? [ context ] : context ) || [ document ];
+
+		candidates = candidates && ( candidates.nodeType ? [ candidates ] : candidates ) || context;
+
+		prepareParentheses( selector ).replace( mqsa, function( m, $0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $A, $B, index ) {
+
+			/*
+			* $0 - tag name
+			* $1 - attribute name if exists value
+			* $2 - attribute comparison ("=", "~=", "!=", etc.)
+			* $3 - attribute value or name if not exists $1
+			* $4 - attribute identifier, maybe only "i" Case-sensitivity added on CSS4
+			* $5 - beginning special characters (".", "#")
+			* $6 - name (id, class)
+			* $7 - beginning special characters for pseudo (":", "::")
+			* $8 - name pseudo
+			* $9 - stuff in parentheses
+			* $A - combinators (" ", "+", "~", ">")
+			*/
+
+			var 
+				chunks, node, elems, parent, candidate, attr, value, pseudo,
+				scope = [], combinatorType = 0, preparePseudo = false;
+
+			// if end selector or incorrect selector
+			if ( !$0 && !$3 && !$5 && !$7 ) {
+				if ( ( value = selector.charAt( index ) ) && value.replace( /\s+/g, "" ) ) {
+					throw new Error( "Syntax error: " + selector.substring( index ) );
+				}
+				return;
+			}
+
+			chunks = prepareChunks( $0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $A, $B );
+
+			$0 = chunks[ 0 ];
+			$1 = chunks[ 1 ];
+			$5 = chunks[ 5 ];
+			$7 = chunks[ 7 ];
+			$A = chunks[ 10 ]
+
+			for( length = candidates.length; candidate = candidates[ --length ]; ) {
+
+				if ( combinator === " " ) {
+					elems = candidate.getElementsByTagName( $0 || "*" );
+				} else if ( combinator === ">" ) {
+					elems = candidate.children;
+				} else if ( combinator === "~" || combinator === "+" ) {
 					elems = [];
-
-				} else if ( prevRule === ">" ) {
-					elems = [];
-
-					uTag = tag ? tag.toUpperCase() : tag;
-
-					for( k = 0; elem = cache[ k ]; k++ ) {
-
-						elem = elem.children;
-
-						for( n = 0; child = elem[ n ]; n++ ) {
-							if ( child.nodeType === 1 ) {
-								if ( uTag ) {
-									if ( uTag === child.nodeName ) {
-										elems[ elems.length ] = child;
-									}
-								} else {
-									elems[ elems.length ] = child;
-								}
-							}
-						}
-					}
-
-					extra[ 1 ] = true;
-
-				} else if ( prevRule === "+" || prevRule === "~" ) {
-					elems = [];
-
-					for( k = 0, l = cache.length; k < l; k++ ) {
-
-						uTag = tag ? tag.toUpperCase() : tag;
-
-						elem = cache[ k ];
-
-						while ( elem = elem.nextSibling ) {
-							if ( elem.nodeType === 1 ) {
-
-								if ( uTag ) {
-									if ( uTag === elem.nodeName ) {
-										elems[ elems.length ] = elem;
-									}
-								} else {
-									elems[ elems.length ] = elem;
-								}
-
-								if ( prevRule === "+" ) break;
-							}
-						}
-					}
-
-					extra[ 1 ] = true;
-
-				} else if ( ( m[ 5 ] === "#" && !( o = false ) ) || ( m[ 2 ] === "id" && m[ 3 ] === "=" && ( o = true ) ) ) {
-
-					if ( o ) {
-						m[ 6 ] = m[ 4 ].replace( /^(?:"(.*)"|'(.*)')$/, '$1$2' ).replace( /\\/g, "" );
-						m[ 2 ] = m[ 3 ] = m[ 4 ] = undefined;
-					}
-
-					elems = [];
-					n = m[ 6 ];
-
-					if ( from === document ) {
-						cache = [];
-						uTag = tag ? tag.toUpperCase() : tag;
-						do {
-							child = document.getElementById( n );
-							if ( child ) {
-								cache[ cache.length ] = child;
-								child.setAttribute( "id", n + " _" );
-							}
-						} while( child );
-
-						for( o = 0; elem = cache[ o ]; o++ ) {
-							elem.setAttribute( "id", n );
-							if ( !uTag || elem.nodeName === uTag ) {
-								elems[ elems.length ] = elem;
-							}
-						}
-					} else {
-						cache = from.getElementsByTagName( tag || '*' );
-
-						for( o = 0; elem = cache[ o ]; o++ ) {
-							if ( elem.id && elem.id === n ) {
-								elems[ elems.length ] = elem;
-							}
-						}
-					}
-
-					m[ 5 ] = undefined;
-
-				} else if ( m[ 5 ] === "." && !tag && byClass ) {
-
-					elems = byClass.call( from, m[ 6 ] );
-
-					tagOnly = !m[ 4 ] && !m[ 7 ] && ( ( nextRule === "," ) || ( index === len ) );
-
-					m[ 5 ] = undefined;
-
+					elem = candidate;
+					combinatorType = combinator === "+" ? 2 : 1;
 				} else {
-					elems = from.getElementsByTagName( tag || '*' );
+					length = 0;
+					elems = candidates;
 				}
 
-				if ( tagOnly ) {
-					cache = elems;
-					if ( parts.length == 0 && elems.length && ( ( nextRule === "," ) || ( index === len ) ) ) {
-						moveElems( elems, out, !tag, elems instanceof Array );
-					}
+				i = 0;
 
-				} else {
+				while( ( elem = combinatorType ? elem.nextSibling : elems[ i++ ] ) ) {
 
-					if ( elems.length > 0 ) {
-						if ( ( parts.length == 0 ) && ( ( nextRule === "," ) || ( index === len ) ) ) {
-							cache = checkRule( m, elems, out, tag );
+					if ( ( ( !$0 || $0 === "*" ) && elem.nodeType === 1 ) || elem.nodeName === $0 ) {
+
+						if ( ( $1 || $5 || $7 ) && !checkRule(
+							elem, $1, chunks[ 2 ], chunks[ 3 ], $5, chunks[ 6 ], $7, chunks[ 9 ], chunks[ 12 ], chunks[ 13 ]
+						) ) {
+							if ( combinatorType === 2 ) {
+								break;
+							}
+							continue;
+						}
+
+						if ( $A === "," ) {
+							if ( !seed || seed === elem ) {
+								result[ elem.sourceIndex ] = elem;
+							}
 						} else {
-							cache = checkRule( m, elems, [], tag );
+							scope[ scope.length ] = elem;
 						}
-					} else {
-						cache = [];
+
 					}
 
-					if ( !nextRule && index < len ) {
-
-						l = cache.length;
-
-						do {
-
-							mqsa.lastIndex = index;
-							m = mqsa.exec( selector );
-
-							index = mqsa.lastIndex;
-
-							nextRule = m[ 10 ];
-
-							if ( l ) {
-								if ( ( parts.length == 0 ) && ( ( nextRule === "," ) || ( index === len ) ) ) {
-									cache = checkRule( m, cache, out, tag );
-								} else {
-									cache = checkRule( m, cache, [], tag );
-								}
-								l = cache.length;
-							}
-
-							if ( nextRule ) break;
-
-						} while( index < len );
-					}
-				}
-
-				if ( nextRule !== true && parts.length > 0 ) {
-
-					if ( cache.length === 0 ) {
-						parts.length = 0;
-					} else {
-						elems = [];
-						for( n = 0; elem = cache[ n ]; ) {
-							elems[ n++ ] = elem;
-						}
-
-						k = out.length;
-
-						while( part = parts.pop() ) {
-
-							l = parts.length;
-
-							if ( part.rule === ">" ) {
-								for( n = 0; elem = elems[ n ]; n++ ) {
-									if ( elem.parentNode && ( !part.tag || elem.parentNode.nodeName === part.tag ) ) {
-										if ( l === 0 ) {
-											if ( ( nextRule === "," ) || ( index === len ) ) {
-												out[ k++ ] = cache[ n ];
-											} else {
-												elems[ n ] = cache[ n ];
-											}
-										} else {
-											elems[ n ] = elem.parentNode;
-										}
-									} else {
-										elems[ n ] = true;
-									}
-								}
-							} else {
-								for( n = 0; elem = elems[ n ]; n++ ) {
-
-									elem = elem.previousSibling;
-
-									o = false;
-									while( elem ) {
-										if ( elem.nodeType === 1 ) {
-											if ( !part.tag || elem.nodeName === part.tag ) {
-												if ( l === 0 ) {
-													if ( ( nextRule === "," ) || ( index === len ) ) {
-														out[ k++ ] = cache[ n ];
-													} else {
-														elems[ n ] = cache[ n ];
-													}
-												} else {
-													elems[ n ] = elem;
-												}
-
-												o = true;
-												break;
-											}
-										}
-										elem = elem.previousSibling;
-									}
-									if ( !o ) {
-										elems[ n ] = true;
-									}
-								}
-							}
-						}
-						k === out.length || ( out.length = k );
-
-						if ( !( ( nextRule === "," ) || ( index === len ) ) ) {
-							cache = [];
-							for( n = 0; elem = elems[ n ]; n++ ) {
-								elem !== true && ( cache.push( elem ) );
-							}
-						}
-					}
-				}
-
-				if ( nextRule === " " ) {
-					if ( cache.length > 0 ) {
-						mqsa.lastIndex = index;
-
-						extra = parser( selector, cache, extra, true );
-
-						index = mqsa.lastIndex;
-
-						extra[ 1 ] = true;
-
-					} else {
-						mqsa.lastIndex = index;
-
-						do {
-							m = mqsa.exec( selector );
-							if ( !m[ 4 ] && !m[ 5 ] && !m[ 7 ] && !m[ 1 ] ) spike.error( selector.substring( index ) );
-
-							if ( m[ 10 ] === "," ) break;
-						} while( mqsa.lastIndex < len );
-
-						index = mqsa.lastIndex;
-
-						nextRule = m[ 10 ];
-					}
-				}
-
-				if ( nextRule === "," ) {
-
-					extra[ 1 ] = true;
-
-					if ( sub ) break;
-				}
-
-				prevRule = nextRule;
-
-			} while( index < len );
-
-		}
-
-		return extra;
-	}
-
-	spike.querySelectorAll = function( selector, context ) {
-
-		context = context && context.nodeType ? context : document;
-
-		mqsa.lastIndex = 0;
-
-		var i, results, qsaStart = true, extra;
-
-		if ( hasQSA ) {
-
-			var parent, oid, nid, firstCom = /^\s*[>+~]/.test( selector );
-
-			results = [ extra, 0 ]
-
-			if ( context.nodeType === 9 ) {
-				try {
-					extra = hasQSA[1].call( context, selector );
-					qsaStart = false;
-				} catch( _ ) {}
-
-			} else if ( context.nodeType === 1 && context.nodeName !== "OBJECT" ) {
-
-				if ( firstCom && ( parent = context.parentNode ) ) {
-
-					oid = context.getAttribute( "id" );
-					nid = oid && oid.replace( /'/g, "\\$&" ) || '__qsaEngine__';
-					!oid && context.setAttribute( "id", nid );
-
-					try {
-						extra = hasQSA[0].call( parent, "[id='" + nid + "'] " + selector );
-						qsaStart = false;
-					} catch( _ ) {}
-
-					!oid && context.removeAttribute( "id" );
-				} else if ( !firstCom ) {
-					try {
-						extra = hasQSA[0].call( context, selector );
-						qsaStart = false;
-					} catch( _ ) {}
-				}
-			}
-		}
-
-		if ( qsaStart ) {
-
-			results = parser( selector, [ context ], [ [], 0 ] );
-
-			extra = results[ 0 ];
-
-			if ( results[ 1 ] && extra.length > 1 ) {
-
-				hasDuplicate = baseHasDuplicate;
-				Array.prototype.sort.call( extra, sortElems );
-
-				if ( hasDuplicate ) {
-					for( i = 1; i < extra.length; i++ ) {
-						if ( extra[ i ] === extra[ i - 1 ] ) {
-							pSplice.call( extra, i--, 1 );
-							delete extra[ extra.length ];
-						}
-					}
-				}
-			}
-		}
-
-		return extra;
-	}
-
-	spike.error = function( msg ) {
-		throw new Error( "Syntax error: " + msg );
-	}
-
-	window.spike = spike;
-
-	var ie = eval( "/*@cc_on @_jscript_version;@*/" );
-
-	if ( ie && ie <= 5.8 && Element ) {
-
-		document.querySelectorAll = Element.prototype.querySelectorAll = function( selector ) {
-
-			if ( this === document ) {
-				return spike.querySelectorAll( selector, this );
-			}
-
-			var m;
-
-			mqsa.lastIndex = 0;
-			do {
-				m = mqsa.exec( selector );
-				if ( !m[ 10 ] || m[ 10 ] === " " ) {
-					if ( ( !m[ 1 ] || m[ 1 ] && this.nodeName === m[ 1 ].toUpperCase() ) && ( checkRule( m, [ this ], [] ).length > 0 ) ) {
-						if ( m[ 10 ] === " " ) {
-							selector = selector.substr( mqsa.lastIndex, selector.length - mqsa.lastIndex );
-							break;
-						}
-					} else break;
-				} else break;
-			} while( mqsa.lastIndex < selector.length );
-
-			return spike.querySelectorAll( selector, this );
-		}
-
-		document.querySelector = Element.prototype.querySelector = function( selector ) {
-			return document.querySelectorAll.call( this, selector )[0] || null;
-		}
-
-		document.getElementsByClassName = Element.prototype.getElementsByClassName = function( classes ) {
-
-			var result = [], j, i = 0, cls, elem,
-				elems = this.getElementsByTagName( '*' );
-
-			classes = classes.replace( /^[\s]+|[\s](?=\s)|[\s]+$/g, '' ).split( " " );
-
-			for( ; elem = elems[ i++ ]; ) {
-				for( j = classes.length; cls = classes[ --j ]; ) {
-					if ( !elem.className || (" " + elem.className + " ").indexOf( " " + cls + " " ) === -1 ) {
-						elem = null;
+					if ( combinatorType === 2 && elem.nodeType === 1 ) {
 						break;
 					}
 				}
-				elem && ( result[ result.length ] = elem );
+			}
+
+			if ( ( combinator = $A ) === "," ) {
+				candidates = context;
+				combinator = " ";
+			} else {
+				candidates = scope;
+			}
+		});
+
+		i = 0;
+		context = [];
+		length = result.length;
+		while( i < length ) {
+			if ( elem = result[ i++ ] ) {
+				context[ context.length ] = elem;
+			}
+		}
+
+		return context;
+	}
+
+	try {
+		// test of CSS3 pseudo selector
+		document.querySelector( "p:last-child" );
+
+	} catch( _e_ ) {
+
+		// if not exists native querySelector or not support CSS3 pseudo selectors
+		var qSA, qS, gEBCN;
+
+		document.querySelectorAll = qSA = function( selector, refNodes ) {
+
+			var m, results = [], qsaStart = 1;
+
+			mqsa.lastIndex = 0;
+
+			if ( nativeQsa ) {
+
+				var parent, oid, nid, firstCom = /^\s*[>+~]/.test( selector );
+
+				if ( this.nodeType === 9 ) {
+					try {
+						results = nativeQsa[ 1 ].call( this, selector, refNodes );
+						qsaStart = 0;
+					} catch( _e_ ) {}
+
+				} else if ( this.nodeType === 1 && this.nodeName !== "OBJECT" ) {
+
+					if ( firstCom && ( parent = this.parentNode ) ) {
+
+						oid = this.getAttribute( "id" );
+						nid = oid && oid.replace( /'/g, "\\$&" ) || '__qsaEngine__';
+						!oid && this.setAttribute( "id", nid );
+
+						try {
+							results = nativeQsa[ 0 ].call( parent, "[id='" + nid + "'] " + selector, refNodes );
+							qsaStart = 0;
+						} catch( _e_ ) {}
+
+						!oid && this.removeAttribute( "id" );
+					} else if ( !firstCom ) {
+						try {
+							results = nativeQsa[ 0 ].call( this, selector, refNodes );
+							qsaStart = 0;
+						} catch( _e_ ) {}
+					}
+				}
+			}
+
+			if ( qsaStart ) {
+
+				if ( this.nodeType !== 9 ) {
+
+					do {
+						m = mqsa.exec( selector );
+						m = prepareChunks( m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10], m[11], m[12] );
+						if ( !m[ 10 ] || m[ 10 ] === " " ) {
+							if ( ( !m[ 0 ] || m[ 0 ] && this.nodeName === m[ 0 ].toUpperCase() ) &&
+								( checkRule( elem, m[1], m[2], m[3], m[5], m[6], m[7], m[9], m[12], m[13] ) ) ) {
+								if ( m[ 10 ] === " " ) {
+									selector = selector.substr( mqsa.lastIndex, selector.length - mqsa.lastIndex );
+									break;
+								}
+							} else break;
+						} else break;
+					} while( mqsa.lastIndex < selector.length );
+
+					mqsa.lastIndex = 0;
+				}
+
+				results = qSelector( selector, this, 0, refNodes, " " );
+			}
+
+			return results;
+		}
+
+		document.querySelector = qS = function( selector, refNodes ) {
+			return document.querySelectorAll( selector, refNodes )[0] || null;
+		}
+
+		document.getElementsByClassName = gEBCN = function( classes ) {
+
+			var result = [];
+
+			if ( classes = classes.replace( /^[\s]+|[\s](?=\s)|[\s]+$/g, '' ) ) {
+
+				if ( nativeQsa ) {
+					return ( this.nodeType === 9 ? nativeQsa[ 1 ] : nativeQsa[ 0 ] ).call( this, classes.replace(/\s+(?=\S)|^/g, ".") );
+				}
+				
+				var j, i = 0, cls, elem, elems = this.getElementsByTagName( '*' );
+
+				for( ; elem = elems[ i++ ]; ) {
+					for( j = classes.length; cls = classes[ --j ]; ) {
+						if ( !elem.className || (" " + elem.className + " ").indexOf( " " + cls + " " ) === -1 ) {
+							elem = null;
+							break;
+						}
+					}
+					elem && ( result[ result.length ] = elem );
+				}
 			}
 
 			return result;
 		}
+
+		try {
+			ElementProto.querySelectorAll = qSA;
+			ElementProto.querySelector = qS;
+			ElementProto.getElementsByClassName = gEBCN;
+			ElementProto.matchesSelector = function( selector, refNodes ) {
+				return qSelector( selector, 0, this, refNodes, " " ).length > 0;
+			}
+		} catch ( _e_ ) {}
 	}
 
 })( window );
