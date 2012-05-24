@@ -1,5 +1,5 @@
 /*
- * spike for IE JavaScript Library v0.1.0
+ * spike for IE JavaScript Library v0.1.1
  *
  * Copyright 2012, Dmitriy Pakhtinov ( spb.piksel@gmail.com )
  *
@@ -9,7 +9,7 @@
  *   http://www.opensource.org/licenses/mit-license.php
  *   http://www.gnu.org/licenses/gpl.html
  *
- * Update: 23-05-2012
+ * Update: 24-05-2012
  *
  * element.js DOM Element Model v0.1.3 for Internet Explorer < 8
  */
@@ -470,7 +470,7 @@
 })( window );
 
 /*
- * selectors.js CSS3 Selectors API for Internet Explorer v1.0
+ * selectors.js CSS3 Selectors API for Internet Explorer v1.0.1
  */
 (function( window, undefined ) {
 
@@ -898,6 +898,8 @@
 				}
 				
 				var j, i = 0, cls, elem, elems = this.getElementsByTagName( '*' );
+
+				classes = classes.split( " " );
 
 				for( ; elem = elems[ i++ ]; ) {
 					for( j = classes.length; cls = classes[ --j ]; ) {
