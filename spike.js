@@ -470,7 +470,7 @@
 })( window );
 
 /*
- * selectors.js CSS3 Selectors API for Internet Explorer v1.0.1
+ * selectors.js CSS3 Selectors API for Internet Explorer v1.0.2
  */
 (function( window, undefined ) {
 
@@ -683,7 +683,7 @@
 					break;
 				default:
 					// restore stuff in parentheses
-					$9 = $9.indexOf( '\x01' ) > 0 ? $9.replace( /\x01/g, "(" ).replace( /\x02/g, ")" ) : $9;
+					$9 = $9.indexOf( String.fromCharCode( 1 ) ) > 0 ? $9.replace( /\x01/g, "(" ).replace( /\x02/g, ")" ) : $9;
 			}
 		}
 
@@ -694,13 +694,13 @@
 		// preparing special pseudo-selectors with exist in parentheses the sub-selectors
 		return selector.indexOf( '(' ) === -1 ? selector : next || selector.indexOf( ":not" ) !== -1 ?
 			selector.replace( /([\s\S]*\([^\(]*)\(([^\(\)]*)\)([^\)]*\)[\s\S]*)/g, function( _, a, b, c ) {
-				return prepareParentheses( a + "\x01" + b + "\x02" + c, 1 );
+				return prepareParentheses( a + String.fromCharCode( 1 ) + b + String.fromCharCode( 2 ) + c, 1 );
 		}) : selector;
 	}
 
 	function qSelector( selector, context, seed, candidates, combinator ) {
 
-		var i, length, elem, result = [];
+		var i, length, elem, result = [], _min = -1, _max = -2, sourceIndex;
 
 		context = context && ( context.nodeType ? [ context ] : context ) || [ document ];
 
@@ -774,7 +774,16 @@
 
 						if ( $A === "," ) {
 							if ( !seed || seed === elem ) {
-								result[ elem.sourceIndex ] = elem;
+
+								sourceIndex = elem.sourceIndex;
+
+								if ( _min === -1 || _min > sourceIndex ) {
+									_min = sourceIndex;
+								}
+								if ( _max < sourceIndex ) {
+									_max = sourceIndex;
+								}
+								result[ sourceIndex ] = elem;
 							}
 						} else {
 							scope[ scope.length ] = elem;
@@ -796,14 +805,13 @@
 			}
 		});
 
-		i = 0;
 		context = [];
-		length = result.length;
-		while( i < length ) {
+		for( i = _min; i <= _max; ) {
 			if ( elem = result[ i++ ] ) {
 				context[ context.length ] = elem;
 			}
 		}
+		result.length = 0;
 
 		return context;
 	}
